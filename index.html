@@ -12,6 +12,7 @@
       background: #0d0f1c;
       color: #ffffff;
       padding: 40px;
+      font-size: 18px;
     }
     .container {
       max-width: 600px;
@@ -24,18 +25,25 @@
     h2 {
       text-align: center;
       color: #66f0f1;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    #livePrice {
+      text-align: center;
       margin-bottom: 20px;
+      font-size: 20px;
+      color: #66f0f1;
     }
     label {
       display: block;
       margin-top: 20px;
       color: #ccc;
-      font-size: 14px;
+      font-size: 16px;
     }
     input {
       width: 100%;
-      padding: 12px;
-      font-size: 16px;
+      padding: 14px;
+      font-size: 18px;
       margin-top: 8px;
       border: none;
       border-radius: 8px;
@@ -47,11 +55,11 @@
     }
     button {
       margin-top: 25px;
-      padding: 12px 20px;
+      padding: 14px 20px;
       width: 100%;
       background: linear-gradient(90deg, #00e6e6, #007bfc);
       color: white;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 600;
       border: none;
       border-radius: 8px;
@@ -63,7 +71,7 @@
     }
     .result {
       margin-top: 30px;
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1.6;
     }
     #chartContainer {
@@ -77,23 +85,22 @@
       display: none;
       background: linear-gradient(90deg, #007bfc, #7f00ff);
     }
-    #currentPrice {
+    footer {
+      margin-top: 60px;
       text-align: center;
+      font-size: 16px;
+      color: #888;
+    }
+    footer a {
+      text-decoration: none;
       color: #66f0f1;
-      margin-top: 20px;
-      font-size: 18px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎯 BID Mindshare Calculator</h2>
-
-    <div id="currentPrice">Loading $BID price...</div>
-
-    <div id="chartContainer">
-      <canvas id="bidChart"></canvas>
-    </div>
+    <div id="livePrice">Fetching live $BID price...</div>
 
     <label for="mindshare">Mindshare (%)</label>
     <input type="number" id="mindshare" step="any" placeholder="e.g. 1 or .25">
@@ -103,36 +110,48 @@
     <div class="result" id="result"></div>
 
     <button id="shareBtn" onclick="share()">Share to X</button>
+
+    <div id="chartContainer">
+      <canvas id="bidChart"></canvas>
+    </div>
   </div>
 
+  <footer>
+    Created by <a href="https://x.com/stacheonomics?s=21" target="_blank">@Stacheonomics</a>
+  </footer>
+
   <script>
-    const COINGECKO_ID = 'creatorbid';
-    const proxy = "https://corsproxy.io/?";
-    let currentBidPrice = 0;
+    const PAIR_API = "https://api.dexscreener.com/latest/dex/pairs/bsc/0x764cF114f1838c22b138fB4dcDAAD03A65C946a9";
+    let livePrice = null;
 
-    async function fetchPrice() {
-      const res = await fetch(`${proxy}https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`);
-      const data = await res.json();
-      return data[COINGECKO_ID].usd;
+    async function fetchDexscreenerData() {
+      try {
+        const res = await fetch(PAIR_API);
+        const data = await res.json();
+        return data.pair;
+      } catch (e) {
+        console.error("Dexscreener fetch error:", e);
+        return null;
+      }
     }
 
-    async function fetchHistory() {
-      const res = await fetch(`${proxy}https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`);
-      const data = await res.json();
-      return data.prices;
-    }
-
-    function renderChart(history) {
+    function renderChart(historyArray) {
       const ctx = document.getElementById('bidChart').getContext('2d');
-      const labels = history.map(h => new Date(h[0]).toLocaleDateString());
-      const data = history.map(h => h[1]);
+
+      const labels = historyArray.map(item => {
+        const date = new Date(item.timestamp);
+        return `${date.getHours()}:00`;
+      });
+
+      const prices = historyArray.map(item => parseFloat(item.priceUsd));
+
       new Chart(ctx, {
         type: 'line',
         data: {
           labels,
           datasets: [{
-            label: 'BID Price (USD)',
-            data,
+            label: 'BID Price (USD) - 24h',
+            data: prices,
             borderColor: '#66f0f1',
             backgroundColor: 'rgba(102,240,241,0.1)',
             fill: true,
@@ -150,13 +169,6 @@
       });
     }
 
-    async function initialize() {
-      currentBidPrice = await fetchPrice();
-      document.getElementById("currentPrice").innerHTML = `$BID Price: $${currentBidPrice.toFixed(4)}`;
-      const history = await fetchHistory();
-      renderChart(history);
-    }
-
     async function calculate() {
       const rawInput = document.getElementById("mindshare").value.trim();
       const mindshare = parseFloat(rawInput.startsWith('.') ? '0' + rawInput : rawInput);
@@ -165,14 +177,19 @@
         return;
       }
 
+      if (!livePrice) {
+        alert("Still fetching $BID price... try again in a second.");
+        return;
+      }
+
       const xp = mindshare * 1500;
       const bidTokens = xp * 134;
-      const usdValue = bidTokens * currentBidPrice;
+      const usdValue = bidTokens * livePrice;
 
       document.getElementById("result").innerHTML = `
         <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
         <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-        <p><strong>BID Price:</strong> $${currentBidPrice.toFixed(4)}</p>
+        <p><strong>BID Price:</strong> $${livePrice.toFixed(4)}</p>
         <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
       `;
       const shareBtn = document.getElementById("shareBtn");
@@ -185,7 +202,18 @@
       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     }
 
-    window.onload = initialize;
+    window.onload = async () => {
+      const pairData = await fetchDexscreenerData();
+      if (pairData) {
+        livePrice = parseFloat(pairData.priceUsd);
+        document.getElementById("livePrice").textContent = `$BID Price: $${livePrice.toFixed(4)}`;
+        if (pairData.priceUsdHistory) {
+          renderChart(pairData.priceUsdHistory);
+        }
+      } else {
+        document.getElementById("livePrice").textContent = "Price unavailable";
+      }
+    };
   </script>
 </body>
 </html>
