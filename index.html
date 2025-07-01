@@ -1,4 +1,4 @@
-<!-- Add this <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -99,11 +99,12 @@
 
   <script>
     const COINGECKO_ID = 'creatorbid';
+    const proxy = "https://corsproxy.io/?";
 
     async function fetchPriceAndHistory() {
       const [priceRes, historyRes] = await Promise.all([
-        fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`).then(r => r.json()),
-        fetch(`https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`).then(r => r.json())
+        fetch(`${proxy}https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`).then(r => r.json()),
+        fetch(`${proxy}https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`).then(r => r.json())
       ]);
       return {
         price: priceRes[COINGECKO_ID].usd,
@@ -169,7 +170,6 @@
     }
   </script>
 
-
   <div style="margin-top: 60px; text-align: center; font-size: 14px; color: #888;">
     <a href="https://x.com/stacheonomics?s=21" target="_blank" style="text-decoration: none; color: #66f0f1;">
       <img src="https://pbs.twimg.com/profile_images/1683266588129712128/8diCX7mI_400x400.jpg" 
@@ -178,6 +178,5 @@
       Created by <strong>@Stacheonomics</strong>
     </a>
   </div>
-
 </body>
 </html>
