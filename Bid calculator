@@ -1,0 +1,183 @@
+<!-- Add this <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BID Holdings Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #0d0f1c;
+      color: #ffffff;
+      padding: 40px;
+    }
+    .container {
+      max-width: 600px;
+      background: #1a1c2e;
+      padding: 30px;
+      border-radius: 12px;
+      margin: auto;
+      box-shadow: 0 0 20px rgba(0,255,255,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #66f0f1;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      color: #ccc;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 8px;
+      background-color: #25273c;
+      color: #fff;
+    }
+    input:focus {
+      outline: 2px solid #66f0f1;
+    }
+    button {
+      margin-top: 25px;
+      padding: 12px 20px;
+      width: 100%;
+      background: linear-gradient(90deg, #00e6e6, #007bfc);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .result {
+      margin-top: 30px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    #chartContainer {
+      margin-top: 40px;
+    }
+    canvas {
+      background-color: #1a1c2e;
+      border-radius: 8px;
+    }
+    #shareBtn {
+      display: none;
+      background: linear-gradient(90deg, #007bfc, #7f00ff);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎯 BID Holdings Calculator</h2>
+
+    <label for="mindshare">Mindshare (%)</label>
+    <input type="number" id="mindshare" step="0.01" placeholder="e.g. 0.01 for 1%">
+
+    <button onclick="calculate()">Calculate</button>
+
+    <div class="result" id="result"></div>
+
+    <button id="shareBtn" onclick="share()">Share to X</button>
+
+    <div id="chartContainer">
+      <canvas id="bidChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const COINGECKO_ID = 'creatorbid';
+
+    async function fetchPriceAndHistory() {
+      const [priceRes, historyRes] = await Promise.all([
+        fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`).then(r => r.json()),
+        fetch(`https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`).then(r => r.json())
+      ]);
+      return {
+        price: priceRes[COINGECKO_ID].usd,
+        history: historyRes.prices
+      };
+    }
+
+    function renderChart(history) {
+      const ctx = document.getElementById('bidChart').getContext('2d');
+      const labels = history.map(h => new Date(h[0]).toLocaleDateString());
+      const data = history.map(h => h[1]);
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'BID Price (USD)',
+            data,
+            borderColor: '#66f0f1',
+            backgroundColor: 'rgba(102,240,241,0.1)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#ccc' } } },
+          scales: {
+            x: { ticks: { color: '#aaa' } },
+            y: { ticks: { color: '#aaa' } }
+          }
+        }
+      });
+    }
+
+    async function calculate() {
+      const mindshare = parseFloat(document.getElementById("mindshare").value);
+      if (isNaN(mindshare) || mindshare <= 0) {
+        alert('Enter a valid mindshare (e.g., 0.01 = 1%)');
+        return;
+      }
+
+      const { price, history } = await fetchPriceAndHistory();
+      renderChart(history);
+
+      const xp = mindshare * 1500;
+      const bidTokens = xp * 134;
+      const usdValue = bidTokens * price;
+
+      document.getElementById("result").innerHTML = `
+        <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
+        <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+        <p><strong>BID Price:</strong> $${price.toFixed(4)}</p>
+        <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+      `;
+      document.getElementById("shareBtn").style.display = 'inline-block';
+      document.getElementById("shareBtn").dataset.text = `My mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by showing up. #CreatorBid`;
+    }
+
+    function share() {
+      const text = encodeURIComponent(document.getElementById("shareBtn").dataset.text);
+      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    }
+  </script>
+
+
+  <div style="margin-top: 60px; text-align: center; font-size: 14px; color: #888;">
+    <a href="https://x.com/stacheonomics?s=21" target="_blank" style="text-decoration: none; color: #66f0f1;">
+      <img src="https://pbs.twimg.com/profile_images/1683266588129712128/8diCX7mI_400x400.jpg" 
+           alt="@Stacheonomics profile picture" 
+           style="width: 36px; height: 36px; border-radius: 50%; vertical-align: middle; margin-right: 8px;">
+      Created by <strong>@Stacheonomics</strong>
+    </a>
+  </div>
+
+</body>
+</html>
