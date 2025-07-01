@@ -77,29 +77,38 @@
       display: none;
       background: linear-gradient(90deg, #007bfc, #7f00ff);
     }
+    #currentPrice {
+      text-align: center;
+      color: #66f0f1;
+      margin-top: 20px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>🎯 BID Holdings Calculator</h2>
+    <h2>🎯 BID Mindshare Calculator</h2>
+
+    <div id="currentPrice">Loading $BID price...</div>
+
+    <div id="chartContainer">
+      <canvas id="bidChart"></canvas>
+    </div>
 
     <label for="mindshare">Mindshare (%)</label>
-    <input type="number" id="mindshare" step="0.01" placeholder="e.g. 0.01 for 1%">
+    <input type="number" id="mindshare" step="any" placeholder="e.g. 1 or .25">
 
     <button onclick="calculate()">Calculate</button>
 
     <div class="result" id="result"></div>
 
     <button id="shareBtn" onclick="share()">Share to X</button>
-
-    <div id="chartContainer">
-      <canvas id="bidChart"></canvas>
-    </div>
   </div>
 
   <script>
     const COINGECKO_ID = 'creatorbid';
     const proxy = "https://corsproxy.io/?";
+    let currentBidPrice = 0;
 
     async function fetchPrice() {
       const res = await fetch(`${proxy}https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`);
@@ -141,45 +150,42 @@
       });
     }
 
+    async function initialize() {
+      currentBidPrice = await fetchPrice();
+      document.getElementById("currentPrice").innerHTML = `$BID Price: $${currentBidPrice.toFixed(4)}`;
+      const history = await fetchHistory();
+      renderChart(history);
+    }
+
     async function calculate() {
-      const mindshare = parseFloat(document.getElementById("mindshare").value);
+      const rawInput = document.getElementById("mindshare").value.trim();
+      const mindshare = parseFloat(rawInput.startsWith('.') ? '0' + rawInput : rawInput);
       if (isNaN(mindshare) || mindshare <= 0) {
         alert('Enter a valid mindshare (e.g., 0.01 = 1%)');
         return;
       }
 
-      const price = await fetchPrice();
       const xp = mindshare * 1500;
       const bidTokens = xp * 134;
-      const usdValue = bidTokens * price;
+      const usdValue = bidTokens * currentBidPrice;
 
       document.getElementById("result").innerHTML = `
         <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
         <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-        <p><strong>BID Price:</strong> $${price.toFixed(4)}</p>
+        <p><strong>BID Price:</strong> $${currentBidPrice.toFixed(4)}</p>
         <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
       `;
       const shareBtn = document.getElementById("shareBtn");
       shareBtn.style.display = 'inline-block';
       shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
-
-      const history = await fetchHistory();
-      renderChart(history);
     }
 
     function share() {
       const text = encodeURIComponent(document.getElementById("shareBtn").dataset.text);
       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     }
-  </script>
 
-  <div style="margin-top: 60px; text-align: center; font-size: 14px; color: #888;">
-    <a href="https://x.com/stacheonomics?s=21" target="_blank" style="text-decoration: none; color: #66f0f1;">
-      <img src="creator.jpg" 
-           alt="@Stacheonomics profile picture" 
-           style="width: 36px; height: 36px; border-radius: 50%; vertical-align: middle; margin-right: 8px;">
-      Created by <strong>@Stacheonomics</strong>
-    </a>
-  </div>
+    window.onload = initialize;
+  </script>
 </body>
 </html>
