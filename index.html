@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>BID Holdings Calculator</title>
+  <title>BID Mindshare Calculator</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -101,15 +101,16 @@
     const COINGECKO_ID = 'creatorbid';
     const proxy = "https://corsproxy.io/?";
 
-    async function fetchPriceAndHistory() {
-      const [priceRes, historyRes] = await Promise.all([
-        fetch(`${proxy}https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`).then(r => r.json()),
-        fetch(`${proxy}https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`).then(r => r.json())
-      ]);
-      return {
-        price: priceRes[COINGECKO_ID].usd,
-        history: historyRes.prices
-      };
+    async function fetchPrice() {
+      const res = await fetch(`${proxy}https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_ID}&vs_currencies=usd`);
+      const data = await res.json();
+      return data[COINGECKO_ID].usd;
+    }
+
+    async function fetchHistory() {
+      const res = await fetch(`${proxy}https://api.coingecko.com/api/v3/coins/${COINGECKO_ID}/market_chart?vs_currency=usd&days=7`);
+      const data = await res.json();
+      return data.prices;
     }
 
     function renderChart(history) {
@@ -147,9 +148,7 @@
         return;
       }
 
-      const { price, history } = await fetchPriceAndHistory();
-      renderChart(history);
-
+      const price = await fetchPrice();
       const xp = mindshare * 1500;
       const bidTokens = xp * 134;
       const usdValue = bidTokens * price;
@@ -160,8 +159,12 @@
         <p><strong>BID Price:</strong> $${price.toFixed(4)}</p>
         <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
       `;
-      document.getElementById("shareBtn").style.display = 'inline-block';
-      document.getElementById("shareBtn").dataset.text = `My mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by showing up. #CreatorBid`;
+      const shareBtn = document.getElementById("shareBtn");
+      shareBtn.style.display = 'inline-block';
+      shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
+
+      const history = await fetchHistory();
+      renderChart(history);
     }
 
     function share() {
@@ -172,7 +175,7 @@
 
   <div style="margin-top: 60px; text-align: center; font-size: 14px; color: #888;">
     <a href="https://x.com/stacheonomics?s=21" target="_blank" style="text-decoration: none; color: #66f0f1;">
-      <img src="https://pbs.twimg.com/profile_images/1683266588129712128/8diCX7mI_400x400.jpg" 
+      <img src="creator.jpg" 
            alt="@Stacheonomics profile picture" 
            style="width: 36px; height: 36px; border-radius: 50%; vertical-align: middle; margin-right: 8px;">
       Created by <strong>@Stacheonomics</strong>
