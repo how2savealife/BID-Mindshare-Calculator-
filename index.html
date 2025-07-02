@@ -1,4 +1,3 @@
-<!-- BID Mindshare Calculator with Working TradingView Chart -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,6 +120,30 @@
   <footer>
     Created by <a href="https://x.com/stacheonomics?s=21" target="_blank">@Stacheonomics</a>
   </footer>
+
+  <!-- Floating Buy Me a Coffee Button -->
+  <a href="https://coff.ee/stacheonomics" 
+     target="_blank" 
+     style="
+       position: fixed;
+       bottom: 20px;
+       right: 20px;
+       background: linear-gradient(90deg, #007bfc, #66f0f1);
+       color: #fff;
+       padding: 12px 20px;
+       border-radius: 30px;
+       font-weight: 600;
+       font-size: 14px;
+       text-decoration: none;
+       box-shadow: 0 0 12px rgba(102, 240, 241, 0.4);
+       z-index: 999;
+       transition: transform 0.2s ease;
+     "
+     onmouseover="this.style.transform='scale(1.05)'"
+     onmouseout="this.style.transform='scale(1)'"
+  >
+    ☕ Buy Me a Coffee
+  </a>
 
   <script>
     const PAIR_API = "https://api.dexscreener.com/latest/dex/pairs/bsc/0x764cF114f1838c22b138fB4dcDAAD03A65C946a9";
