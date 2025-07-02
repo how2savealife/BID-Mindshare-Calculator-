@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>BID Mindshare Calculator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
@@ -11,10 +12,10 @@
       background: #0d0f1c;
       color: #ffffff;
       padding: 40px;
-      font-size: 18px;
+      font-size: 17px;
     }
     .container {
-      max-width: 600px;
+      max-width: 640px;
       background: #1a1c2e;
       padding: 30px;
       border-radius: 12px;
@@ -24,26 +25,18 @@
     h2 {
       text-align: center;
       color: #66f0f1;
-      margin-bottom: 10px;
-      font-size: 28px;
-    }
-    .price {
-      text-align: center;
-      font-size: 22px;
-      margin-top: -10px;
       margin-bottom: 20px;
-      color: #00e6e6;
     }
     label {
       display: block;
       margin-top: 20px;
       color: #ccc;
-      font-size: 16px;
+      font-size: 15px;
     }
     input {
       width: 100%;
-      padding: 14px;
-      font-size: 18px;
+      padding: 12px;
+      font-size: 17px;
       margin-top: 8px;
       border: none;
       border-radius: 8px;
@@ -55,11 +48,11 @@
     }
     button {
       margin-top: 25px;
-      padding: 14px 20px;
+      padding: 12px 20px;
       width: 100%;
       background: linear-gradient(90deg, #00e6e6, #007bfc);
       color: white;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
       border: none;
       border-radius: 8px;
@@ -71,117 +64,105 @@
     }
     .result {
       margin-top: 30px;
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.6;
     }
-    iframe {
+    #chartContainer {
       margin-top: 40px;
-      border-radius: 12px;
-      width: 100%;
-      height: 400px;
-      border: none;
     }
     #shareBtn {
       display: none;
       background: linear-gradient(90deg, #007bfc, #7f00ff);
+    }
+    iframe {
+      margin-top: 30px;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+      height: 400px;
+    }
+    .footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+    }
+    .footer a {
+      text-decoration: none;
+      color: #66f0f1;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎯 BID Mindshare Calculator</h2>
-    <div id="bidPrice" class="price">Loading BID Price...</div>
-    
-    <label for="username">Enter your X handle:</label>
-    <input type="text" id="username" placeholder="@yourhandle">
+
+    <label for="username">Enter your X username</label>
+    <input type="text" id="username" placeholder="e.g. stacheonomics">
+
     <button onclick="lookup()">Lookup & Calculate</button>
-    
+
     <div class="result" id="result"></div>
+
     <button id="shareBtn" onclick="share()">Share to X</button>
-    
-    <iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=CRYPTO%3ABIDCUSD&locale=en" 
-            title="BID Price Chart" allowtransparency="true" scrolling="no">
-    </iframe>
+
+    <div id="chartContainer">
+      <iframe src="https://www.tradingview.com/embed-widget/symbol-overview/?symbol=CRYPTO%3ABIDCUSD&colorTheme=dark&locale=en" frameborder="0"></iframe>
+    </div>
   </div>
 
-  <footer style="margin-top: 60px; text-align: center; font-size: 16px; color: #888;">
-    Created by <a href="https://x.com/stacheonomics?s=21" target="_blank" style="color: #66f0f1;">@Stacheonomics</a>
-  </footer>
-
-  <a href="https://coff.ee/stacheonomics" 
-     target="_blank" 
-     style="
-       position: fixed;
-       bottom: 20px;
-       right: 20px;
-       background: linear-gradient(90deg, #007bfc, #66f0f1);
-       color: #fff;
-       padding: 12px 20px;
-       border-radius: 30px;
-       font-weight: 600;
-       font-size: 14px;
-       text-decoration: none;
-       box-shadow: 0 0 12px rgba(102, 240, 241, 0.4);
-       z-index: 999;
-       transition: transform 0.2s ease;
-     "
-     onmouseover="this.style.transform='scale(1.05)'"
-     onmouseout="this.style.transform='scale(1)'">
-    ☕ Buy Me a Coffee
-  </a>
+  <div class="footer">
+    <p>
+      Created by <a href="https://x.com/stacheonomics?s=21" target="_blank"><strong>@Stacheonomics</strong></a> —
+      <a href="https://coff.ee/stacheonomics" target="_blank">☕ Buy me a coffee</a>
+    </p>
+  </div>
 
   <script>
-    async function fetchPrice() {
+    async function lookup() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) {
+        alert("Please enter a valid X username.");
+        return;
+      }
+
       try {
-        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=creatorbid&vs_currencies=usd");
+        const res = await fetch(`/.netlify/functions/getMindshare?username=${encodeURIComponent(username)}`);
         const data = await res.json();
-        const price = data.creatorbid.usd.toFixed(4);
-        document.getElementById("bidPrice").innerText = `$BID Price: $${price}`;
-        return parseFloat(price);
-      } catch (e) {
-        document.getElementById("bidPrice").innerText = "Failed to load price";
-        return 0.14;
+
+        if (res.ok && data.mindshare !== undefined) {
+          const mindshare = parseFloat(data.mindshare);
+          document.getElementById("result").innerHTML = `<p><strong>Mindshare %:</strong> ${mindshare.toFixed(4)}%</p>`;
+          calculateFromMindshare(mindshare);
+        } else {
+          throw new Error(data.error || "Unknown error");
+        }
+      } catch (error) {
+        document.getElementById("result").innerHTML = `<p style="color:red;">Something went wrong. Please try again later.</p>`;
       }
     }
 
-    async function lookup() {
-      const username = document.getElementById("username").value.trim().replace(/^@/, "");
-      if (!username) return alert("Please enter a valid X username.");
+    function calculateFromMindshare(mindshare) {
+      const xp = mindshare * 15;
+      const bidTokens = xp * 134;
+      const bidPrice = 0.1349; // Static for speed
+      const usdValue = bidTokens * bidPrice;
 
-      try {
-        const res = await fetch(`https://api.kaito.ai/api/v1/yaps?username=${username}`);
-        const json = await res.json();
-        const mindshare = parseFloat(json.yaps_l30d);
-        if (!mindshare || isNaN(mindshare)) return alert("Mindshare not found for this user.");
+      document.getElementById("result").innerHTML += `
+        <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
+        <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+        <p><strong>BID Price:</strong> $${bidPrice}</p>
+        <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+      `;
 
-        const price = await fetchPrice();
-        const xp = mindshare * 1500;
-        const bidTokens = xp * 134;
-        const usdValue = bidTokens * price;
-
-        document.getElementById("result").innerHTML = `
-          <p><strong>Mindshare:</strong> ${mindshare.toFixed(2)}%</p>
-          <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
-          <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-          <p><strong>Live BID Price:</strong> $${price.toFixed(4)}</p>
-          <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-        `;
-
-        const shareBtn = document.getElementById("shareBtn");
-        shareBtn.style.display = 'inline-block';
-        shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
-
-      } catch (err) {
-        alert("Something went wrong. Please try again later.");
-      }
+      document.getElementById("shareBtn").style.display = 'inline-block';
+      document.getElementById("shareBtn").dataset.text = `My kaito mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
     }
 
     function share() {
       const text = encodeURIComponent(document.getElementById("shareBtn").dataset.text);
       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     }
-
-    fetchPrice();
   </script>
 </body>
 </html>
