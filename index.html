@@ -27,6 +27,13 @@
       margin-bottom: 10px;
       font-size: 28px;
     }
+    .price {
+      text-align: center;
+      font-size: 22px;
+      margin-top: -10px;
+      margin-bottom: 20px;
+      color: #00e6e6;
+    }
     label {
       display: block;
       margin-top: 20px;
@@ -83,13 +90,16 @@
 <body>
   <div class="container">
     <h2>🎯 BID Mindshare Calculator</h2>
+    <div id="bidPrice" class="price">Loading BID Price...</div>
+    
     <label for="username">Enter your X handle:</label>
     <input type="text" id="username" placeholder="@yourhandle">
     <button onclick="lookup()">Lookup & Calculate</button>
+    
     <div class="result" id="result"></div>
     <button id="shareBtn" onclick="share()">Share to X</button>
-
-    <iframe src="https://www.tradingview.com/chart/?symbol=CRYPTO%3ABIDCUSD" 
+    
+    <iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=CRYPTO%3ABIDCUSD&locale=en" 
             title="BID Price Chart" allowtransparency="true" scrolling="no">
     </iframe>
   </div>
@@ -121,35 +131,57 @@
   </a>
 
   <script>
+    async function fetchPrice() {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=creatorbid&vs_currencies=usd");
+        const data = await res.json();
+        const price = data.creatorbid.usd.toFixed(4);
+        document.getElementById("bidPrice").innerText = `$BID Price: $${price}`;
+        return parseFloat(price);
+      } catch (e) {
+        document.getElementById("bidPrice").innerText = "Failed to load price";
+        return 0.14;
+      }
+    }
+
     async function lookup() {
       const username = document.getElementById("username").value.trim().replace(/^@/, "");
       if (!username) return alert("Please enter a valid X username.");
-      const res = await fetch(`https://api.kaito.ai/api/v1/yaps?username=${username}`);
-      const json = await res.json();
-      const mindshare = parseFloat(json.yaps_l30d);
-      if (!mindshare || isNaN(mindshare)) return alert("Mindshare not found for this user.");
 
-      const xp = mindshare * 1500;
-      const bidTokens = xp * 134;
-      const price = 0.14; // Static price
-      const usdValue = bidTokens * price;
+      try {
+        const res = await fetch(`https://api.kaito.ai/api/v1/yaps?username=${username}`);
+        const json = await res.json();
+        const mindshare = parseFloat(json.yaps_l30d);
+        if (!mindshare || isNaN(mindshare)) return alert("Mindshare not found for this user.");
 
-      document.getElementById("result").innerHTML = `
-        <p><strong>Mindshare:</strong> ${mindshare.toFixed(2)}%</p>
-        <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
-        <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-        <p><strong>Static BID Price:</strong> $${price.toFixed(2)}</p>
-        <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-      `;
-      const shareBtn = document.getElementById("shareBtn");
-      shareBtn.style.display = 'inline-block';
-      shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
+        const price = await fetchPrice();
+        const xp = mindshare * 1500;
+        const bidTokens = xp * 134;
+        const usdValue = bidTokens * price;
+
+        document.getElementById("result").innerHTML = `
+          <p><strong>Mindshare:</strong> ${mindshare.toFixed(2)}%</p>
+          <p><strong>XP Earned:</strong> ${xp.toFixed(2)}</p>
+          <p><strong>Total $BID:</strong> ${bidTokens.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+          <p><strong>Live BID Price:</strong> $${price.toFixed(4)}</p>
+          <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+        `;
+
+        const shareBtn = document.getElementById("shareBtn");
+        shareBtn.style.display = 'inline-block';
+        shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toFixed(2)} worth of $BID just by yapping! What’s your mindshare worth?! www.bidcalc.app`;
+
+      } catch (err) {
+        alert("Something went wrong. Please try again later.");
+      }
     }
 
     function share() {
       const text = encodeURIComponent(document.getElementById("shareBtn").dataset.text);
       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     }
+
+    fetchPrice();
   </script>
 </body>
 </html>
