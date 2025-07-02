@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>BID Mindshare Calculator</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
@@ -74,16 +73,12 @@
       font-size: 18px;
       line-height: 1.6;
     }
-    #chartContainer {
-      margin-top: 40px;
-    }
-    canvas {
-      background-color: #1a1c2e;
-      border-radius: 8px;
-    }
     #shareBtn {
       display: none;
       background: linear-gradient(90deg, #007bfc, #7f00ff);
+    }
+    #chartContainer {
+      margin-top: 40px;
     }
     footer {
       margin-top: 60px;
@@ -112,7 +107,13 @@
     <button id="shareBtn" onclick="share()">Share to X</button>
 
     <div id="chartContainer">
-      <canvas id="bidChart"></canvas>
+      <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_bidx&symbol=UNISWAP%3ABIDCUSD&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=0&theme=dark&style=1&timezone=Etc%2FUTC&studies=[]&hideideas=1"
+        width="100%" height="400"
+        frameborder="0"
+        allowtransparency="true"
+        scrolling="no"
+        allowfullscreen>
+      </iframe>
     </div>
   </div>
 
@@ -124,49 +125,15 @@
     const PAIR_API = "https://api.dexscreener.com/latest/dex/pairs/bsc/0x764cF114f1838c22b138fB4dcDAAD03A65C946a9";
     let livePrice = null;
 
-    async function fetchDexscreenerData() {
+    async function fetchDexscreenerPrice() {
       try {
         const res = await fetch(PAIR_API);
         const data = await res.json();
-        return data.pair;
+        return parseFloat(data.pair.priceUsd);
       } catch (e) {
         console.error("Dexscreener fetch error:", e);
         return null;
       }
-    }
-
-    function renderChart(historyArray) {
-      const ctx = document.getElementById('bidChart').getContext('2d');
-
-      const labels = historyArray.map(item => {
-        const date = new Date(item.timestamp);
-        return `${date.getHours()}:00`;
-      });
-
-      const prices = historyArray.map(item => parseFloat(item.priceUsd));
-
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'BID Price (USD) - 24h',
-            data: prices,
-            borderColor: '#66f0f1',
-            backgroundColor: 'rgba(102,240,241,0.1)',
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#ccc' } } },
-          scales: {
-            x: { ticks: { color: '#aaa' } },
-            y: { ticks: { color: '#aaa' } }
-          }
-        }
-      });
     }
 
     async function calculate() {
@@ -203,13 +170,9 @@
     }
 
     window.onload = async () => {
-      const pairData = await fetchDexscreenerData();
-      if (pairData) {
-        livePrice = parseFloat(pairData.priceUsd);
+      livePrice = await fetchDexscreenerPrice();
+      if (livePrice) {
         document.getElementById("livePrice").textContent = `$BID Price: $${livePrice.toFixed(4)}`;
-        if (pairData.priceUsdHistory) {
-          renderChart(pairData.priceUsdHistory);
-        }
       } else {
         document.getElementById("livePrice").textContent = "Price unavailable";
       }
