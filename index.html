@@ -183,6 +183,7 @@
         <p><strong>BID Price:</strong> $${livePrice.toFixed(4)}</p>
         <p><strong>USD Value:</strong> $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
       `;
+
       const shareBtn = document.getElementById("shareBtn");
       shareBtn.style.display = 'inline-block';
       shareBtn.dataset.text = `My kaito mindshare earns me $${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} worth of $BID just by yapping! 🤑
@@ -190,6 +191,8 @@
 What’s your mindshare worth?! 💸
 
 Check it out via bidcalc.app by @Stacheonomics`;
+    }
+
     function share() {
       const text = encodeURIComponent(document.getElementById("shareBtn").dataset.text);
       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
